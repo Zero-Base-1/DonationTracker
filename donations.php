@@ -7,6 +7,7 @@ requireLogin();
 require __DIR__ . '/includes/queries.php';
 
 $errors = [];
+$userId = currentUserId();
 $formData = [
     'id' => '',
     'donor_name' => '',
@@ -54,10 +55,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'amount' => $amountValue,
             'type' => $formData['type'],
             'event_id' => $eventId,
+            'created_by' => $userId,
             'notes' => $formData['notes'],
         ];
 
         if ($donationId) {
+            $existing = getDonation($pdo, $donationId);
+            if (!$existing || (!isAdmin() && (int) ($existing['created_by'] ?? 0) !== $userId)) {
+                flash('error', 'You cannot modify this donation.');
+                redirect('/DonationTracker/donations.php');
+            }
+
+            unset($payload['created_by']);
             updateDonation($pdo, $donationId, $payload);
             flash('success', 'Donation updated successfully.');
         } else {
@@ -71,6 +80,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 if (isset($_GET['delete'])) {
     $deleteId = (int) $_GET['delete'];
+    $existing = getDonation($pdo, $deleteId);
+    if (!$existing || (!isAdmin() && (int) ($existing['created_by'] ?? 0) !== $userId)) {
+        flash('error', 'You cannot delete this donation.');
+        redirect('/DonationTracker/donations.php');
+    }
+
     deleteDonation($pdo, $deleteId);
     flash('success', 'Donation deleted successfully.');
     redirect('/DonationTracker/donations.php');
@@ -80,7 +95,7 @@ if (isset($_GET['edit'])) {
     $editId = (int) $_GET['edit'];
     $donation = getDonation($pdo, $editId);
 
-    if (!$donation) {
+    if (!$donation || (!isAdmin() && (int) ($donation['created_by'] ?? 0) !== $userId)) {
         flash('error', 'Donation not found.');
         redirect('/DonationTracker/donations.php');
     }
@@ -96,8 +111,8 @@ if (isset($_GET['edit'])) {
     ];
 }
 
-$donations = getDonations($pdo);
-$events = getEvents($pdo);
+$donations = getDonations($pdo, isAdmin() ? null : $userId);
+$events = getEvents($pdo, isAdmin() ? null : $userId);
 
 $pageTitle = 'Donations';
 $activeNav = 'donations';

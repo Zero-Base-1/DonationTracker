@@ -7,6 +7,7 @@ requireLogin();
 require __DIR__ . '/includes/queries.php';
 
 $errors = [];
+$userId = currentUserId();
 $formData = [
     'id' => '',
     'name' => '',
@@ -41,9 +42,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'event_date' => $formData['event_date'],
             'location' => $formData['location'],
             'description' => $formData['description'],
+            'created_by' => $userId,
         ];
 
         if ($eventId) {
+            $existing = getEvent($pdo, $eventId);
+            if (!$existing || (!isAdmin() && (int) ($existing['created_by'] ?? 0) !== $userId)) {
+                flash('error', 'You cannot modify this event.');
+                redirect('/DonationTracker/events.php');
+            }
+
+            unset($payload['created_by']);
             updateEvent($pdo, $eventId, $payload);
             flash('success', 'Event updated successfully.');
         } else {
@@ -57,6 +66,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 if (isset($_GET['delete'])) {
     $deleteId = (int) $_GET['delete'];
+    $existing = getEvent($pdo, $deleteId);
+    if (!$existing || (!isAdmin() && (int) ($existing['created_by'] ?? 0) !== $userId)) {
+        flash('error', 'You cannot delete this event.');
+        redirect('/DonationTracker/events.php');
+    }
+
     deleteEvent($pdo, $deleteId);
     flash('success', 'Event deleted successfully.');
     redirect('/DonationTracker/events.php');
@@ -66,7 +81,7 @@ if (isset($_GET['edit'])) {
     $editId = (int) $_GET['edit'];
     $event = getEvent($pdo, $editId);
 
-    if (!$event) {
+    if (!$event || (!isAdmin() && (int) ($event['created_by'] ?? 0) !== $userId)) {
         flash('error', 'Event not found.');
         redirect('/DonationTracker/events.php');
     }
@@ -80,7 +95,7 @@ if (isset($_GET['edit'])) {
     ];
 }
 
-$events = getEvents($pdo);
+$events = getEvents($pdo, isAdmin() ? null : $userId);
 
 $pageTitle = 'Events';
 $activeNav = 'events';

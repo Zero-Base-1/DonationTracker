@@ -6,9 +6,17 @@ require __DIR__ . '/includes/functions.php';
 requireLogin();
 require __DIR__ . '/includes/queries.php';
 
-$totalsByEvent = getDonationTotalsByEvent($pdo);
-$totalsByType = getDonationTotalsByType($pdo);
-$recentActivity = getRecentActivity($pdo);
+$userId = currentUserId();
+
+if (isAdmin()) {
+    $totalsByEvent = getDonationTotalsByEvent($pdo);
+    $totalsByType = getDonationTotalsByType($pdo);
+    $recentActivity = getRecentActivity($pdo);
+} else {
+    $totalsByEvent = getDonationTotalsByEvent($pdo, $userId);
+    $totalsByType = getDonationTotalsByType($pdo, $userId);
+    $recentActivity = getRecentActivity($pdo, 10, $userId);
+}
 
 $pageTitle = 'Reports';
 $activeNav = 'reports';

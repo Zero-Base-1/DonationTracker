@@ -75,6 +75,13 @@ function currentUser(): ?array
     return $_SESSION['user'] ?? null;
 }
 
+function currentUserId(): ?int
+{
+    $user = currentUser();
+
+    return $user ? (int) $user['id'] : null;
+}
+
 function requireLogin(): void
 {
     if (!currentUser()) {

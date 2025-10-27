@@ -6,11 +6,21 @@ require __DIR__ . '/includes/functions.php';
 requireLogin();
 require __DIR__ . '/includes/queries.php';
 
-$stats = getDonationStats($pdo);
-$eventStats = getEventStats($pdo);
-$recentDonations = getRecentDonations($pdo);
-$recentEvents = getRecentEvents($pdo);
-$monthlyTotals = getMonthlyDonationTotals($pdo);
+$userId = currentUserId();
+
+if (isAdmin()) {
+    $stats = getDonationStats($pdo);
+    $eventStats = getEventStats($pdo);
+    $recentDonations = getRecentDonations($pdo);
+    $recentEvents = getRecentEvents($pdo);
+    $monthlyTotals = getMonthlyDonationTotals($pdo);
+} else {
+    $stats = getDonationStats($pdo, $userId);
+    $eventStats = getEventStats($pdo, $userId);
+    $recentDonations = getRecentDonations($pdo, 5, $userId);
+    $recentEvents = getRecentEvents($pdo, 5, $userId);
+    $monthlyTotals = getMonthlyDonationTotals($pdo, 6, $userId);
+}
 
 $monthlyLabels = array_map(static fn($row) => $row['month'], $monthlyTotals);
 $monthlyValues = array_map(static fn($row) => (float) $row['total_amount'], $monthlyTotals);
