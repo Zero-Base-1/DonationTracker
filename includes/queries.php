@@ -315,9 +315,18 @@ function getUsers(PDO $pdo): array
     return $pdo->query('SELECT id, name, email, role, created_at FROM users ORDER BY datetime(created_at) DESC')->fetchAll();
 }
 
-function getActivityFeed(PDO $pdo, int $limit = 50): array
+function getActivityFeed(PDO $pdo, int $limit = 50, ?string $activityType = null): array
 {
-    $stmt = $pdo->prepare('SELECT * FROM (
+    $allowedTypes = ['Donation', 'Event', 'User'];
+    $filterClause = '';
+
+    if ($activityType !== null && in_array($activityType, $allowedTypes, true)) {
+        $filterClause = ' WHERE activity_type = :type';
+    } else {
+        $activityType = null;
+    }
+
+    $sql = 'SELECT * FROM (
         SELECT donor_name AS title, donation_date AS activity_date, "Donation" AS activity_type, amount AS metric, created_at
         FROM donations
         UNION ALL
@@ -326,8 +335,15 @@ function getActivityFeed(PDO $pdo, int $limit = 50): array
         UNION ALL
         SELECT name AS title, created_at AS activity_date, "User" AS activity_type, NULL AS metric, created_at
         FROM users
-    ) AS feed ORDER BY datetime(created_at) DESC LIMIT :limit');
+    ) AS feed' . $filterClause . ' ORDER BY datetime(created_at) DESC LIMIT :limit';
+
+    $stmt = $pdo->prepare($sql);
     $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+
+    if ($activityType !== null) {
+        $stmt->bindValue(':type', $activityType, PDO::PARAM_STR);
+    }
+
     $stmt->execute();
 
     return $stmt->fetchAll();

@@ -8,7 +8,8 @@ requireAdmin();
 require __DIR__ . '/../includes/queries.php';
 
 $activityLimit = isset($_GET['limit']) ? max(10, (int) $_GET['limit']) : 50;
-$activityFeed = getActivityFeed($pdo, $activityLimit);
+$activityType = isset($_GET['type']) && $_GET['type'] !== '' ? sanitize($_GET['type']) : null;
+$activityFeed = getActivityFeed($pdo, $activityLimit, $activityType);
 
 $pageTitle = 'Audit Log';
 $activeNav = 'audit';
@@ -28,6 +29,13 @@ include __DIR__ . '/../templates/header.php';
                 <select id="limit" name="limit" class="rounded-lg border border-slate-200 px-3 py-2 focus:border-accent focus:ring-2 focus:ring-accent/40 transition">
                     <?php foreach ([25, 50, 100] as $option) : ?>
                         <option value="<?= $option; ?>" <?php if ($activityLimit === $option) echo 'selected'; ?>><?= $option; ?> items</option>
+                    <?php endforeach; ?>
+                </select>
+                <label for="type" class="text-slate-500">Type</label>
+                <select id="type" name="type" class="rounded-lg border border-slate-200 px-3 py-2 focus:border-accent focus:ring-2 focus:ring-accent/40 transition">
+                    <option value="" <?php if ($activityType === null) echo 'selected'; ?>>All</option>
+                    <?php foreach (['Donation', 'Event', 'User'] as $typeOption) : ?>
+                        <option value="<?= $typeOption; ?>" <?php if ($activityType === $typeOption) echo 'selected'; ?>><?= $typeOption; ?></option>
                     <?php endforeach; ?>
                 </select>
                 <button type="submit" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 transition">Apply</button>
