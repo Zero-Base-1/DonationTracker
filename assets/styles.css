@@ -1,0 +1,13 @@
+body {
+    font-family: 'Inter', sans-serif;
+}
+
+.card-shadow {
+    box-shadow: 0 10px 40px -20px rgba(15, 23, 42, 0.2);
+}
+
+.glass-panel {
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(14px);
+}
+
