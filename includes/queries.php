@@ -222,13 +222,13 @@ function deleteEvent(PDO $pdo, int $id): void
 
 function getDonationTotalsByEvent(PDO $pdo, ?int $userId = null): array
 {
-    $query = 'SELECT e.name AS event_name, COALESCE(SUM(d.amount), 0) AS total_amount, COUNT(d.id) AS donation_count
+    $query = 'SELECT e.name AS event_name, e.event_date AS event_date, COALESCE(SUM(d.amount), 0) AS total_amount, COUNT(d.id) AS donation_count
         FROM events e
         LEFT JOIN donations d ON d.event_id = e.id';
     if ($userId !== null) {
         $query .= ' WHERE e.created_by = :user_id';
     }
-    $query .= ' GROUP BY e.id, e.name ORDER BY total_amount DESC';
+    $query .= ' GROUP BY e.id, e.name, e.event_date ORDER BY total_amount DESC';
 
     $stmt = $pdo->prepare($query);
     if ($userId !== null) {
@@ -246,6 +246,25 @@ function getDonationTotalsByType(PDO $pdo, ?int $userId = null): array
         $query .= ' WHERE created_by = :user_id';
     }
     $query .= ' GROUP BY type ORDER BY total_amount DESC';
+
+    $stmt = $pdo->prepare($query);
+    if ($userId !== null) {
+        $stmt->bindValue(':user_id', $userId, PDO::PARAM_INT);
+    }
+    $stmt->execute();
+
+    return $stmt->fetchAll();
+}
+
+function getEventDonationSeries(PDO $pdo, ?int $userId = null): array
+{
+    $query = 'SELECT e.name AS event_name, e.event_date AS event_date, COALESCE(SUM(d.amount), 0) AS total_amount
+        FROM events e
+        LEFT JOIN donations d ON d.event_id = e.id';
+    if ($userId !== null) {
+        $query .= ' WHERE e.created_by = :user_id';
+    }
+    $query .= ' GROUP BY e.id, e.name, e.event_date ORDER BY date(e.event_date)';
 
     $stmt = $pdo->prepare($query);
     if ($userId !== null) {
