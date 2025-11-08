@@ -44,7 +44,7 @@ function validateDate(string $date): bool
 
 function formatCurrency(float $amount): string
 {
-    return '$' . number_format($amount, 2);
+    return '₱' . number_format($amount, 2);
 }
 
 function truncateText(string $text, int $width, string $suffix = '…'): string

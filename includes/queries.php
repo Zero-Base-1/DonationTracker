@@ -30,10 +30,10 @@ function getEventStats(PDO $pdo, ?int $userId = null): array
 {
     if ($userId === null) {
         $totalEvents = (int) $pdo->query('SELECT COUNT(*) FROM events')->fetchColumn();
-        $stmt = $pdo->query('SELECT COUNT(*) FROM events WHERE date(event_date) >= date("now")');
+        $stmt = $pdo->query('SELECT COUNT(*) FROM events WHERE event_date >= CURDATE()');
         $upcomingEvents = (int) $stmt->fetchColumn();
     } else {
-        $stmt = $pdo->prepare('SELECT COUNT(*), SUM(CASE WHEN date(event_date) >= date("now") THEN 1 ELSE 0 END) FROM events WHERE created_by = :user_id');
+        $stmt = $pdo->prepare('SELECT COUNT(*), SUM(CASE WHEN event_date >= CURDATE() THEN 1 ELSE 0 END) FROM events WHERE created_by = :user_id');
         $stmt->execute([':user_id' => $userId]);
         $row = $stmt->fetch(PDO::FETCH_NUM);
         $totalEvents = (int) ($row[0] ?? 0);
@@ -70,7 +70,7 @@ function getRecentEvents(PDO $pdo, int $limit = 5, ?int $userId = null): array
     if ($userId !== null) {
         $query .= ' WHERE created_by = :user_id';
     }
-    $query .= ' ORDER BY date(event_date) DESC, created_at DESC LIMIT :limit';
+    $query .= ' ORDER BY event_date DESC, created_at DESC LIMIT :limit';
 
     $stmt = $pdo->prepare($query);
     $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
@@ -84,14 +84,14 @@ function getRecentEvents(PDO $pdo, int $limit = 5, ?int $userId = null): array
 
 function getMonthlyDonationTotals(PDO $pdo, int $months = 6, ?int $userId = null): array
 {
-    $query = 'SELECT strftime("%Y-%m", donation_date) AS month, SUM(amount) AS total_amount FROM donations WHERE donation_date >= date("now", :modifier)';
+    $query = 'SELECT DATE_FORMAT(donation_date, "%Y-%m") AS month, SUM(amount) AS total_amount FROM donations WHERE donation_date >= DATE_SUB(NOW(), INTERVAL :months MONTH)';
     if ($userId !== null) {
         $query .= ' AND created_by = :user_id';
     }
-    $query .= ' GROUP BY strftime("%Y-%m", donation_date) ORDER BY month';
+    $query .= ' GROUP BY DATE_FORMAT(donation_date, "%Y-%m") ORDER BY month';
 
     $stmt = $pdo->prepare($query);
-    $stmt->bindValue(':modifier', '-' . $months . ' months', PDO::PARAM_STR);
+    $stmt->bindValue(':months', $months, PDO::PARAM_INT);
     if ($userId !== null) {
         $stmt->bindValue(':user_id', $userId, PDO::PARAM_INT);
     }
@@ -168,7 +168,7 @@ function getEvents(PDO $pdo, ?int $userId = null): array
     if ($userId !== null) {
         $query .= ' WHERE created_by = :user_id';
     }
-    $query .= ' ORDER BY date(event_date) DESC, created_at DESC';
+    $query .= ' ORDER BY event_date DESC, created_at DESC';
 
     $stmt = $pdo->prepare($query);
     if ($userId !== null) {
@@ -264,7 +264,7 @@ function getEventDonationSeries(PDO $pdo, ?int $userId = null): array
     if ($userId !== null) {
         $query .= ' WHERE e.created_by = :user_id';
     }
-    $query .= ' GROUP BY e.id, e.name, e.event_date ORDER BY date(e.event_date)';
+    $query .= ' GROUP BY e.id, e.name, e.event_date ORDER BY e.event_date';
 
     $stmt = $pdo->prepare($query);
     if ($userId !== null) {
@@ -287,7 +287,7 @@ function getRecentActivity(PDO $pdo, int $limit = 10, ?int $userId = null): arra
             UNION ALL
             SELECT name AS title, created_at AS activity_date, "User" AS activity_type, NULL AS metric, created_at
             FROM users
-        ) AS activity ORDER BY date(activity_date) DESC, datetime(created_at) DESC LIMIT :limit';
+        ) AS activity ORDER BY activity_date DESC, created_at DESC LIMIT :limit';
 
         $stmt = $pdo->prepare($sql);
         $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
@@ -298,7 +298,7 @@ function getRecentActivity(PDO $pdo, int $limit = 10, ?int $userId = null): arra
             UNION ALL
             SELECT name AS title, event_date AS activity_date, "Event" AS activity_type, NULL AS metric, created_at
             FROM events WHERE created_by = :user_id
-        ) AS activity ORDER BY date(activity_date) DESC, datetime(created_at) DESC LIMIT :limit';
+        ) AS activity ORDER BY activity_date DESC, created_at DESC LIMIT :limit';
 
         $stmt = $pdo->prepare($sql);
         $stmt->bindValue(':user_id', $userId, PDO::PARAM_INT);
@@ -312,7 +312,7 @@ function getRecentActivity(PDO $pdo, int $limit = 10, ?int $userId = null): arra
 
 function getUsers(PDO $pdo): array
 {
-    return $pdo->query('SELECT id, name, email, role, created_at FROM users ORDER BY datetime(created_at) DESC')->fetchAll();
+    return $pdo->query('SELECT id, name, email, role, created_at FROM users ORDER BY created_at DESC')->fetchAll();
 }
 
 function getActivityFeed(PDO $pdo, int $limit = 50, ?string $activityType = null): array
@@ -335,7 +335,7 @@ function getActivityFeed(PDO $pdo, int $limit = 50, ?string $activityType = null
         UNION ALL
         SELECT name AS title, created_at AS activity_date, "User" AS activity_type, NULL AS metric, created_at
         FROM users
-    ) AS feed' . $filterClause . ' ORDER BY datetime(created_at) DESC LIMIT :limit';
+    ) AS feed' . $filterClause . ' ORDER BY created_at DESC LIMIT :limit';
 
     $stmt = $pdo->prepare($sql);
     $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);

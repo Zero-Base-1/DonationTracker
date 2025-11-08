@@ -76,7 +76,6 @@ include __DIR__ . '/templates/header.php';
             </div>
             <button type="submit" class="w-full inline-flex justify-center bg-primary text-white px-6 py-3 rounded-lg hover:bg-secondary transition font-medium">Sign In</button>
             <div class="text-xs text-slate-500 text-center space-y-2">
-                <p>Default admin: admin@donationtracker.local / changeme123</p>
                 <p>
                     Don’t have an account?
                     <a href="/DonationTracker/signin.php" class="text-accent hover:text-primary transition font-medium">Create one</a>

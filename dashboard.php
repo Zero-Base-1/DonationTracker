@@ -191,7 +191,7 @@ include __DIR__ . '/templates/header.php';
                 y: {
                     beginAtZero: true,
                     ticks: {
-                        callback: (value) => '$' + value
+                        callback: (value) => '₱' + value
                     }
                 }
             },
@@ -204,7 +204,7 @@ include __DIR__ . '/templates/header.php';
                         label: (context) => {
                             const value = context.parsed.y ?? context.parsed;
                             const formatted = typeof value === 'number' ? value.toLocaleString() : value;
-                            return `$${formatted}`;
+                            return `₱${formatted}`;
                         },
                         afterLabel: (context) => {
                             const datasetLabel = context.dataset.label;

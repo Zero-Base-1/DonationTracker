@@ -2,75 +2,79 @@
 
 declare(strict_types=1);
 
-$databasePath = __DIR__ . '/../data/database.sqlite';
+// MySQL connection configuration
+$host = 'localhost';
+$dbname = 'donation_tracker';
+$username = 'root';
+$password = '';
 
-if (!is_dir(dirname($databasePath))) {
-    mkdir(dirname($databasePath), 0777, true);
+try {
+    $pdo = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8mb4", $username, $password);
+    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
+} catch (PDOException $e) {
+    die("Connection failed: " . $e->getMessage());
 }
-
-$pdo = new PDO('sqlite:' . $databasePath);
-$pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-$pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
-
-$pdo->exec('PRAGMA foreign_keys = ON');
 
 $pdo->exec(
     'CREATE TABLE IF NOT EXISTS users (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL,
-        email TEXT NOT NULL UNIQUE,
-        password_hash TEXT NOT NULL,
-        role TEXT NOT NULL DEFAULT "user",
-        created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-    )'
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        email VARCHAR(255) NOT NULL UNIQUE,
+        password_hash VARCHAR(255) NOT NULL,
+        role VARCHAR(50) NOT NULL DEFAULT "user",
+        created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4'
 );
 
 $pdo->exec(
     'CREATE TABLE IF NOT EXISTS events (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL,
-        event_date TEXT NOT NULL,
-        location TEXT,
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        event_date DATE NOT NULL,
+        location VARCHAR(255),
         description TEXT,
-        created_by INTEGER,
-        created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        created_by INT,
+        created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL
-    )'
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4'
 );
 
 $pdo->exec(
     'CREATE TABLE IF NOT EXISTS donations (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        donor_name TEXT NOT NULL,
-        donation_date TEXT NOT NULL,
-        amount REAL NOT NULL DEFAULT 0,
-        type TEXT NOT NULL,
-        event_id INTEGER,
-        created_by INTEGER,
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        donor_name VARCHAR(255) NOT NULL,
+        donation_date DATE NOT NULL,
+        amount DECIMAL(12,2) NOT NULL DEFAULT 0,
+        type VARCHAR(50) NOT NULL,
+        event_id INT,
+        created_by INT,
         notes TEXT,
-        created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE SET NULL,
         FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL
-    )'
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4'
 );
 
 $ensureColumn = static function(PDO $pdo, string $table, string $column, string $definition): void {
-    $columns = $pdo->query('PRAGMA table_info(' . $table . ')')->fetchAll(PDO::FETCH_ASSOC);
-    foreach ($columns as $info) {
-        if (isset($info['name']) && strtolower((string) $info['name']) === strtolower($column)) {
-            return;
+    $stmt = $pdo->prepare("SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS 
+                           WHERE TABLE_SCHEMA = DATABASE() 
+                           AND TABLE_NAME = ? 
+                           AND COLUMN_NAME = ?");
+    $stmt->execute([$table, $column]);
+    $exists = (int) $stmt->fetchColumn();
+    
+    if ($exists === 0) {
+        try {
+            $pdo->exec('ALTER TABLE ' . $table . ' ADD COLUMN ' . $column . ' ' . $definition);
+        } catch (PDOException $e) {
+            // Column may already exist; ignore error.
         }
-    }
-
-    try {
-        $pdo->exec('ALTER TABLE ' . $table . ' ADD COLUMN ' . $column . ' ' . $definition);
-    } catch (PDOException $e) {
-        // Column may already exist; ignore error.
     }
 };
 
-$ensureColumn($pdo, 'events', 'created_by', 'INTEGER');
-$ensureColumn($pdo, 'donations', 'created_by', 'INTEGER');
+$ensureColumn($pdo, 'events', 'created_by', 'INT');
+$ensureColumn($pdo, 'donations', 'created_by', 'INT');
 
 $adminId = $pdo->query('SELECT id FROM users WHERE role = "admin" ORDER BY id LIMIT 1')->fetchColumn();
 
