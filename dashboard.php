@@ -14,6 +14,7 @@ if (isAdmin()) {
     $recentDonations = getRecentDonations($pdo);
     $recentEvents = getRecentEvents($pdo);
     $monthlyTotals = getMonthlyDonationTotals($pdo);
+    $dailyTotals = getDailyDonationTotals($pdo);
     $eventDonationSeries = getEventDonationSeries($pdo);
 } else {
     $stats = getDonationStats($pdo, $userId);
@@ -21,11 +22,14 @@ if (isAdmin()) {
     $recentDonations = getRecentDonations($pdo, 5, $userId);
     $recentEvents = getRecentEvents($pdo, 5, $userId);
     $monthlyTotals = getMonthlyDonationTotals($pdo, 6, $userId);
+    $dailyTotals = getDailyDonationTotals($pdo, 30, $userId);
     $eventDonationSeries = getEventDonationSeries($pdo, $userId);
 }
 
 $monthlyLabels = array_map(static fn($row) => $row['month'], $monthlyTotals);
 $monthlyValues = array_map(static fn($row) => (float) $row['total_amount'], $monthlyTotals);
+$dailyLabels = array_map(static fn($row) => date('M j', strtotime($row['day'])), $dailyTotals);
+$dailyValues = array_map(static fn($row) => (float) $row['total_amount'], $dailyTotals);
 $eventLabels = array_map(static fn($row) => $row['event_name'], $eventDonationSeries);
 $eventDates = array_map(static fn($row) => $row['event_date'], $eventDonationSeries);
 $eventTotals = array_map(static fn($row) => (float) $row['total_amount'], $eventDonationSeries);
@@ -71,6 +75,13 @@ include __DIR__ . '/templates/header.php';
                     <button type="button" data-chart="time" class="chart-toggle px-3 py-2 rounded-lg border border-slate-200 text-slate-600 hover:text-primary hover:border-primary transition active whitespace-nowrap">Donations Over Time</button>
                     <button type="button" data-chart="events" class="chart-toggle px-3 py-2 rounded-lg border border-slate-200 text-slate-600 hover:text-primary hover:border-primary transition whitespace-nowrap">Event Performance</button>
                 </div>
+            </div>
+            <div id="timeFilterContainer" class="mt-3 sm:mt-4 flex items-center gap-2 text-xs" style="display: none;">
+                <label class="text-slate-600 whitespace-nowrap">Filter by:</label>
+                <select id="timeFilter" class="px-3 py-2 rounded-lg border border-slate-200 text-slate-600 hover:border-primary focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition">
+                    <option value="monthly">Monthly</option>
+                    <option value="daily">Daily</option>
+                </select>
             </div>
             <div class="mt-4 sm:mt-6 h-64 sm:h-72 chart-container">
                 <canvas id="donationsChart" class="w-full h-full"></canvas>
@@ -153,20 +164,42 @@ include __DIR__ . '/templates/header.php';
     if (ctx) {
         const eventDates = <?= json_encode(array_map(static fn($date) => $date ? date('M j, Y', strtotime($date)) : null, $eventDates), JSON_THROW_ON_ERROR); ?>;
 
+        const monthlyLabels = <?= json_encode($monthlyLabels, JSON_THROW_ON_ERROR); ?>;
+        const monthlyValues = <?= json_encode($monthlyValues, JSON_THROW_ON_ERROR); ?>;
+        const dailyLabels = <?= json_encode($dailyLabels, JSON_THROW_ON_ERROR); ?>;
+        const dailyValues = <?= json_encode($dailyValues, JSON_THROW_ON_ERROR); ?>;
+
         const chartConfigs = {
             time: {
-                type: 'line',
-                data: {
-                    labels: <?= json_encode($monthlyLabels, JSON_THROW_ON_ERROR); ?>,
-                    datasets: [{
-                        label: 'Donations',
-                        data: <?= json_encode($monthlyValues, JSON_THROW_ON_ERROR); ?>,
-                        borderColor: '#38BDF8',
-                        backgroundColor: 'rgba(56, 189, 248, 0.2)',
-                        tension: 0.4,
-                        fill: true,
-                        pointRadius: 3,
-                    }]
+                monthly: {
+                    type: 'line',
+                    data: {
+                        labels: monthlyLabels,
+                        datasets: [{
+                            label: 'Donations',
+                            data: monthlyValues,
+                            borderColor: '#38BDF8',
+                            backgroundColor: 'rgba(56, 189, 248, 0.2)',
+                            tension: 0.4,
+                            fill: true,
+                            pointRadius: 3,
+                        }]
+                    }
+                },
+                daily: {
+                    type: 'line',
+                    data: {
+                        labels: dailyLabels,
+                        datasets: [{
+                            label: 'Donations',
+                            data: dailyValues,
+                            borderColor: '#38BDF8',
+                            backgroundColor: 'rgba(56, 189, 248, 0.2)',
+                            tension: 0.4,
+                            fill: true,
+                            pointRadius: 3,
+                        }]
+                    }
                 }
             },
             events: {
@@ -228,7 +261,26 @@ include __DIR__ . '/templates/header.php';
             }
         });
 
-        let currentChart = new Chart(ctx, mergeConfig(chartConfigs.time));
+        let currentTimeFilter = 'monthly';
+        let currentChart = new Chart(ctx, mergeConfig(chartConfigs.time.monthly));
+
+        const timeFilterContainer = document.getElementById('timeFilterContainer');
+        const timeFilter = document.getElementById('timeFilter');
+
+        const updateTimeChart = (filter) => {
+            currentTimeFilter = filter;
+            const config = chartConfigs.time[filter];
+            if (config) {
+                currentChart.destroy();
+                currentChart = new Chart(ctx, mergeConfig(config));
+            }
+        };
+
+        if (timeFilter) {
+            timeFilter.addEventListener('change', (e) => {
+                updateTimeChart(e.target.value);
+            });
+        }
 
         const buttons = document.querySelectorAll('.chart-toggle');
         buttons.forEach((btn) => {
@@ -245,10 +297,25 @@ include __DIR__ . '/templates/header.php';
                 buttons.forEach((b) => b.classList.remove('active', 'border-primary', 'text-primary'));
                 btn.classList.add('active', 'border-primary', 'text-primary');
 
-                currentChart.destroy();
-                currentChart = new Chart(ctx, mergeConfig(chartConfigs[target]));
+                if (target === 'time') {
+                    if (timeFilterContainer) {
+                        timeFilterContainer.style.display = 'flex';
+                    }
+                    updateTimeChart(currentTimeFilter);
+                } else {
+                    if (timeFilterContainer) {
+                        timeFilterContainer.style.display = 'none';
+                    }
+                    currentChart.destroy();
+                    currentChart = new Chart(ctx, mergeConfig(chartConfigs[target]));
+                }
             });
         });
+
+        // Show filter on initial load if "Donations Over Time" is active
+        if (timeFilterContainer) {
+            timeFilterContainer.style.display = 'flex';
+        }
     }
 </script>
 

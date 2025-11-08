@@ -10,6 +10,7 @@ if (session_status() !== PHP_SESSION_ACTIVE) {
 
 $isLoggedIn = isset($_SESSION['user']);
 $userName = $isLoggedIn ? $_SESSION['user']['name'] : null;
+$sidebarCollapsedPreference = isset($_COOKIE['sidebarCollapsed']) && $_COOKIE['sidebarCollapsed'] === 'true';
 
 ?>
 <!DOCTYPE html>
@@ -40,16 +41,130 @@ $userName = $isLoggedIn ? $_SESSION['user']['name'] : null;
     <link rel="stylesheet" href="<?= app_url('assets/styles.css'); ?>" />
 </head>
 
-<body class="bg-soft text-slate-900" style="font-family: 'Inter', sans-serif;">
+<body class="bg-soft text-slate-900" style="font-family: 'Inter', sans-serif;"<?= $sidebarCollapsedPreference ? ' data-sidebar-collapsed="true"' : ''; ?>>
+    <script>
+        (function () {
+            const DESKTOP_BREAKPOINT = 768;
+            const STORAGE_KEY = 'sidebarCollapsed';
+            const COOKIE_NAME = 'sidebarCollapsed';
+            const COOKIE_MAX_AGE = 60 * 60 * 24 * 365; // 1 year
+
+            function readCookie(name) {
+                const escapedName = name.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');
+                const pattern = new RegExp(`(?:^|;\\s*)${escapedName}=([^;]*)`);
+                const match = document.cookie.match(pattern);
+                return match ? decodeURIComponent(match[1]) : null;
+            }
+
+            function persistCookie(value) {
+                const parts = [
+                    `${COOKIE_NAME}=${value}`,
+                    'path=/',
+                    `max-age=${COOKIE_MAX_AGE}`,
+                    'samesite=lax'
+                ];
+
+                if (window.location && window.location.protocol === 'https:') {
+                    parts.push('secure');
+                }
+
+                document.cookie = parts.join(';');
+            }
+
+            function determineShouldCollapse() {
+                const cookieValue = readCookie(COOKIE_NAME);
+                if (cookieValue === 'true') {
+                    return true;
+                }
+                if (cookieValue === 'false') {
+                    return false;
+                }
+
+                if (typeof Storage === 'undefined') {
+                    return false;
+                }
+
+                try {
+                    const storedValue = localStorage.getItem(STORAGE_KEY);
+                    if (storedValue === 'true') {
+                        persistCookie('true');
+                        return true;
+                    }
+                    if (storedValue === 'false') {
+                        persistCookie('false');
+                    }
+                } catch (err) {
+                    // Ignore localStorage errors
+                }
+
+                return false;
+            }
+
+            try {
+                if (window.innerWidth < DESKTOP_BREAKPOINT) {
+                    return;
+                }
+
+                if (!determineShouldCollapse()) {
+                    return;
+                }
+
+                document.body.setAttribute('data-sidebar-collapsed', 'true');
+
+                const style = document.createElement('style');
+                style.textContent = '#sidebar { transition: none !important; }';
+                document.head.appendChild(style);
+
+                const applyState = () => {
+                    const sidebar = document.getElementById('sidebar');
+                    if (!sidebar) {
+                        return false;
+                    }
+
+                    if (!sidebar.classList.contains('collapsed')) {
+                        sidebar.classList.add('collapsed');
+                    }
+
+                    requestAnimationFrame(() => {
+                        style.remove();
+                    });
+
+                    return true;
+                };
+
+                if (applyState()) {
+                    return;
+                }
+
+                const observer = new MutationObserver(() => {
+                    if (applyState()) {
+                        observer.disconnect();
+                    }
+                });
+
+                observer.observe(document.body, { childList: true, subtree: true });
+
+                setTimeout(() => {
+                    if (applyState()) {
+                        observer.disconnect();
+                    }
+                }, 10);
+            } catch (err) {
+                // Silently ignore to avoid blocking render
+            }
+        })();
+    </script>
     <div class="min-h-screen flex bg-soft">
         <?php if ($isLoggedIn) : ?>
-            <aside id="sidebar" class="fixed md:relative inset-y-0 left-0 z-40 hidden md:flex flex-col w-64 lg:w-72 bg-primary text-white transition-all duration-300 md:translate-x-0 -translate-x-full">
+            <aside id="sidebar" class="fixed md:relative inset-y-0 left-0 z-40 hidden md:flex flex-col w-64 lg:w-72 bg-primary text-white transition-all duration-300 md:translate-x-0 -translate-x-full<?= $sidebarCollapsedPreference ? ' collapsed' : ''; ?>" data-sidebar-init="true">
                 <div class="px-4 lg:px-6 py-6 lg:py-8 border-b border-white/10 relative">
                     <div class="flex items-center gap-2 lg:gap-3 min-w-0 sidebar-header-content">
                         <span class="inline-flex items-center justify-center w-9 h-9 lg:w-10 lg:h-10 rounded-full bg-accent/20 text-accent font-semibold text-sm lg:text-base flex-shrink-0">DT</span>
                         <div class="sidebar-text min-w-0 flex-1">
-                            <p class="text-base lg:text-lg font-semibold truncate">DonationTracker</p>
-                            <p class="text-xs text-white/70 truncate">Simplify giving, amplify impact.</p>
+                            <p class="text-base lg:text-lg font-semibold leading-tight">
+                                <span class="block">Donation</span>
+                                <span class="block">Tracker</span>
+                            </p>
                         </div>
                         <button id="sidebar-toggle" class="flex-shrink-0 p-2 hover:bg-white/10 rounded-lg transition sidebar-toggle-btn" aria-label="Toggle sidebar">
                             <svg class="w-4 h-4 lg:w-5 lg:h-5 sidebar-icon-expanded" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">

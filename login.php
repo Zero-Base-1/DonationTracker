@@ -2,6 +2,11 @@
 
 declare(strict_types=1);
 
+if (isset($_GET['debug'])) {
+    ini_set('display_errors', '1');
+    error_reporting(E_ALL);
+}
+
 require __DIR__ . '/includes/db.php';
 require __DIR__ . '/includes/functions.php';
 
@@ -70,7 +75,7 @@ include __DIR__ . '/templates/header.php';
             <div>
                 <div class="flex items-center justify-between text-sm">
                     <label for="password" class="font-medium text-slate-600">Password</label>
-                    <a href="#" class="text-accent hover:text-primary transition">Forgot password?</a>
+                    <a href="<?= app_url('forgot_password.php'); ?>" class="text-accent hover:text-primary transition">Forgot password?</a>
                 </div>
                 <input type="password" id="password" name="password" required class="mt-2 w-full rounded-lg border border-slate-200 px-4 py-3 focus:border-accent focus:ring-2 focus:ring-accent/40 transition" placeholder="••••••••">
             </div>

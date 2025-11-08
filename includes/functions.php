@@ -166,3 +166,135 @@ function requireAdmin(): void
     }
 }
 
+function createPasswordResetToken(PDO $pdo, string $email, int $ttlMinutes = 60): ?array
+{
+    try {
+        $stmt = $pdo->prepare('SELECT id, name, email FROM users WHERE email = :email LIMIT 1');
+        $stmt->execute([':email' => $email]);
+        $user = $stmt->fetch();
+    } catch (PDOException $e) {
+        error_log('Failed to look up user for password reset: ' . $e->getMessage());
+        return null;
+    }
+
+    if (!$user) {
+        return null;
+    }
+
+    try {
+        $token = bin2hex(random_bytes(32));
+    } catch (Exception $e) {
+        return null;
+    }
+
+    $tokenHash = hash('sha256', $token);
+    $expiresAt = (new DateTimeImmutable("+{$ttlMinutes} minutes"))->format('Y-m-d H:i:s');
+
+    try {
+        $pdo->prepare('DELETE FROM password_resets WHERE user_id = :user_id')->execute([
+            ':user_id' => $user['id'],
+        ]);
+
+        $pdo->prepare('INSERT INTO password_resets (user_id, token_hash, expires_at) VALUES (:user_id, :token_hash, :expires_at)')
+            ->execute([
+                ':user_id' => $user['id'],
+                ':token_hash' => $tokenHash,
+                ':expires_at' => $expiresAt,
+            ]);
+    } catch (PDOException $e) {
+        error_log('Failed to store password reset token: ' . $e->getMessage());
+        return null;
+    }
+
+    return [
+        'token' => $token,
+        'expires_at' => $expiresAt,
+        'user' => $user,
+    ];
+}
+
+function findValidPasswordReset(PDO $pdo, string $token): ?array
+{
+    $token = trim($token);
+
+    if ($token === '') {
+        return null;
+    }
+
+    $tokenHash = hash('sha256', $token);
+
+    try {
+        $stmt = $pdo->prepare(
+            'SELECT pr.*, u.email, u.name 
+             FROM password_resets pr 
+             INNER JOIN users u ON pr.user_id = u.id 
+             WHERE pr.token_hash = :token_hash 
+             LIMIT 1'
+        );
+        $stmt->execute([':token_hash' => $tokenHash]);
+        $reset = $stmt->fetch();
+    } catch (PDOException $e) {
+        error_log('Failed to locate password reset token: ' . $e->getMessage());
+        return null;
+    }
+
+    if (!$reset) {
+        return null;
+    }
+
+    $now = new DateTimeImmutable('now');
+    $expiresAt = DateTimeImmutable::createFromFormat('Y-m-d H:i:s', $reset['expires_at']);
+
+    if (!$expiresAt || $expiresAt < $now) {
+        $pdo->prepare('DELETE FROM password_resets WHERE id = :id')->execute([':id' => $reset['id']]);
+        return null;
+    }
+
+    return $reset;
+}
+
+function resetPasswordUsingToken(PDO $pdo, string $token, string $newPassword): bool
+{
+    $reset = findValidPasswordReset($pdo, $token);
+
+    if (!$reset) {
+        return false;
+    }
+
+    $passwordHash = password_hash($newPassword, PASSWORD_DEFAULT);
+
+    try {
+        $pdo->beginTransaction();
+
+        $pdo->prepare('UPDATE users SET password_hash = :password_hash WHERE id = :user_id')->execute([
+            ':password_hash' => $passwordHash,
+            ':user_id' => $reset['user_id'],
+        ]);
+
+        $pdo->prepare('DELETE FROM password_resets WHERE user_id = :user_id')->execute([
+            ':user_id' => $reset['user_id'],
+        ]);
+
+        $pdo->commit();
+    } catch (Throwable $e) {
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+        error_log('Failed to reset password using token: ' . $e->getMessage());
+        return false;
+    }
+
+    return true;
+}
+
+function invalidatePasswordResetTokens(PDO $pdo, int $userId): void
+{
+    try {
+        $pdo->prepare('DELETE FROM password_resets WHERE user_id = :user_id')->execute([
+            ':user_id' => $userId,
+        ]);
+    } catch (PDOException $e) {
+        error_log('Failed to invalidate password reset tokens: ' . $e->getMessage());
+    }
+}
+

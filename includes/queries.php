@@ -28,12 +28,15 @@ function getDonationStats(PDO $pdo, ?int $userId = null): array
 
 function getEventStats(PDO $pdo, ?int $userId = null): array
 {
+    // Count upcoming events: only events with event_date >= today (excludes past events)
     if ($userId === null) {
         $totalEvents = (int) $pdo->query('SELECT COUNT(*) FROM events')->fetchColumn();
-        $stmt = $pdo->query('SELECT COUNT(*) FROM events WHERE event_date >= CURDATE()');
+        // Only count events that haven't passed (event_date >= today)
+        $stmt = $pdo->query('SELECT COUNT(*) FROM events WHERE DATE(event_date) >= CURDATE()');
         $upcomingEvents = (int) $stmt->fetchColumn();
     } else {
-        $stmt = $pdo->prepare('SELECT COUNT(*), SUM(CASE WHEN event_date >= CURDATE() THEN 1 ELSE 0 END) FROM events WHERE created_by = :user_id');
+        // Only count events that haven't passed (event_date >= today)
+        $stmt = $pdo->prepare('SELECT COUNT(*), SUM(CASE WHEN DATE(event_date) >= CURDATE() THEN 1 ELSE 0 END) FROM events WHERE created_by = :user_id');
         $stmt->execute([':user_id' => $userId]);
         $row = $stmt->fetch(PDO::FETCH_NUM);
         $totalEvents = (int) ($row[0] ?? 0);
@@ -92,6 +95,24 @@ function getMonthlyDonationTotals(PDO $pdo, int $months = 6, ?int $userId = null
 
     $stmt = $pdo->prepare($query);
     $stmt->bindValue(':months', $months, PDO::PARAM_INT);
+    if ($userId !== null) {
+        $stmt->bindValue(':user_id', $userId, PDO::PARAM_INT);
+    }
+    $stmt->execute();
+
+    return $stmt->fetchAll();
+}
+
+function getDailyDonationTotals(PDO $pdo, int $days = 30, ?int $userId = null): array
+{
+    $query = 'SELECT DATE_FORMAT(donation_date, "%Y-%m-%d") AS day, SUM(amount) AS total_amount FROM donations WHERE donation_date >= DATE_SUB(NOW(), INTERVAL :days DAY)';
+    if ($userId !== null) {
+        $query .= ' AND created_by = :user_id';
+    }
+    $query .= ' GROUP BY DATE_FORMAT(donation_date, "%Y-%m-%d") ORDER BY day';
+
+    $stmt = $pdo->prepare($query);
+    $stmt->bindValue(':days', $days, PDO::PARAM_INT);
     if ($userId !== null) {
         $stmt->bindValue(':user_id', $userId, PDO::PARAM_INT);
     }

@@ -56,6 +56,26 @@ $pdo->exec(
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4'
 );
 
+try {
+    $pdo->exec(
+        'CREATE TABLE IF NOT EXISTS password_resets (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            user_id INT NOT NULL,
+            token_hash CHAR(64) NOT NULL,
+            expires_at DATETIME NOT NULL,
+            created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            INDEX idx_token_hash (token_hash),
+            INDEX idx_expires_at (expires_at),
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4'
+    );
+} catch (PDOException $e) {
+    error_log('Failed to ensure password_resets table: ' . $e->getMessage());
+    if (isset($_GET['debug'])) {
+        echo 'Failed to ensure password_resets table: ' . htmlspecialchars($e->getMessage());
+    }
+}
+
 $ensureColumn = static function(PDO $pdo, string $table, string $column, string $definition): void {
     $stmt = $pdo->prepare("SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS 
                            WHERE TABLE_SCHEMA = DATABASE() 
