@@ -49,7 +49,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $existing = getEvent($pdo, $eventId);
             if (!$existing || (!isAdmin() && (int) ($existing['created_by'] ?? 0) !== $userId)) {
                 flash('error', 'You cannot modify this event.');
-                redirect('/DonationTracker/events.php');
+                redirect('events.php');
             }
 
             unset($payload['created_by']);
@@ -60,7 +60,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             flash('success', 'Event added successfully.');
         }
 
-        redirect('/DonationTracker/events.php');
+        redirect('events.php');
     }
 }
 
@@ -69,12 +69,12 @@ if (isset($_GET['delete'])) {
     $existing = getEvent($pdo, $deleteId);
     if (!$existing || (!isAdmin() && (int) ($existing['created_by'] ?? 0) !== $userId)) {
         flash('error', 'You cannot delete this event.');
-        redirect('/DonationTracker/events.php');
+        redirect('events.php');
     }
 
     deleteEvent($pdo, $deleteId);
     flash('success', 'Event deleted successfully.');
-    redirect('/DonationTracker/events.php');
+    redirect('events.php');
 }
 
 if (isset($_GET['edit'])) {
@@ -83,7 +83,7 @@ if (isset($_GET['edit'])) {
 
     if (!$event || (!isAdmin() && (int) ($event['created_by'] ?? 0) !== $userId)) {
         flash('error', 'Event not found.');
-        redirect('/DonationTracker/events.php');
+        redirect('events.php');
     }
 
     $formData = [
@@ -103,11 +103,11 @@ include __DIR__ . '/templates/header.php';
 
 ?>
 
-<div class="grid gap-8">
-    <div class="bg-white rounded-2xl border border-slate-200 p-6 card-shadow">
-        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+<div class="grid gap-6 md:gap-8">
+    <div class="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 md:p-6 card-shadow">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 md:gap-4">
             <div>
-                <p class="text-lg font-semibold text-primary">Add or Update Event</p>
+                <p class="text-base sm:text-lg font-semibold text-primary">Add or Update Event</p>
                 <p class="text-xs text-slate-500">Keep your community informed about upcoming initiatives.</p>
             </div>
         </div>
@@ -135,34 +135,34 @@ include __DIR__ . '/templates/header.php';
             </div>
         <?php endif; ?>
 
-        <form method="POST" class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+        <form method="POST" class="mt-4 sm:mt-6 grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
             <input type="hidden" name="id" value="<?= htmlspecialchars($formData['id']); ?>">
             <div class="md:col-span-2">
-                <label class="block text-sm font-medium text-slate-600">Event Name</label>
-                <input type="text" name="name" required class="mt-2 w-full rounded-lg border border-slate-200 px-4 py-3 focus:border-accent focus:ring-2 focus:ring-accent/40 transition" value="<?= htmlspecialchars($formData['name']); ?>">
+                <label class="block text-xs sm:text-sm font-medium text-slate-600">Event Name</label>
+                <input type="text" name="name" required class="mt-2 w-full rounded-lg border border-slate-200 px-3 sm:px-4 py-2 sm:py-3 text-sm focus:border-accent focus:ring-2 focus:ring-accent/40 transition" value="<?= htmlspecialchars($formData['name']); ?>">
             </div>
             <div>
-                <label class="block text-sm font-medium text-slate-600">Event Date</label>
-                <input type="date" name="event_date" required class="mt-2 w-full rounded-lg border border-slate-200 px-4 py-3 focus:border-accent focus:ring-2 focus:ring-accent/40 transition" value="<?= htmlspecialchars($formData['event_date']); ?>">
+                <label class="block text-xs sm:text-sm font-medium text-slate-600">Event Date</label>
+                <input type="date" name="event_date" required class="mt-2 w-full rounded-lg border border-slate-200 px-3 sm:px-4 py-2 sm:py-3 text-sm focus:border-accent focus:ring-2 focus:ring-accent/40 transition" value="<?= htmlspecialchars($formData['event_date']); ?>">
             </div>
             <div>
-                <label class="block text-sm font-medium text-slate-600">Location</label>
-                <input type="text" name="location" class="mt-2 w-full rounded-lg border border-slate-200 px-4 py-3 focus:border-accent focus:ring-2 focus:ring-accent/40 transition" value="<?= htmlspecialchars($formData['location']); ?>">
+                <label class="block text-xs sm:text-sm font-medium text-slate-600">Location</label>
+                <input type="text" name="location" class="mt-2 w-full rounded-lg border border-slate-200 px-3 sm:px-4 py-2 sm:py-3 text-sm focus:border-accent focus:ring-2 focus:ring-accent/40 transition" value="<?= htmlspecialchars($formData['location']); ?>">
             </div>
             <div class="md:col-span-2">
-                <label class="block text-sm font-medium text-slate-600">Description</label>
-                <textarea name="description" rows="4" class="mt-2 w-full rounded-lg border border-slate-200 px-4 py-3 focus:border-accent focus:ring-2 focus:ring-accent/40 transition"><?= htmlspecialchars($formData['description']); ?></textarea>
+                <label class="block text-xs sm:text-sm font-medium text-slate-600">Description</label>
+                <textarea name="description" rows="4" class="mt-2 w-full rounded-lg border border-slate-200 px-3 sm:px-4 py-2 sm:py-3 text-sm focus:border-accent focus:ring-2 focus:ring-accent/40 transition"><?= htmlspecialchars($formData['description']); ?></textarea>
             </div>
-            <div class="md:col-span-2 flex gap-4">
-                <button type="submit" class="inline-flex items-center gap-2 bg-primary text-white px-6 py-3 rounded-lg hover:bg-secondary transition font-medium">Save Event</button>
-                <button type="reset" class="inline-flex items-center gap-2 px-6 py-3 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 transition">Clear</button>
+            <div class="md:col-span-2 flex flex-col sm:flex-row gap-3 sm:gap-4 button-group">
+                <button type="submit" class="inline-flex items-center justify-center gap-2 bg-primary text-white px-5 sm:px-6 py-2.5 sm:py-3 rounded-lg hover:bg-secondary transition font-medium text-sm">Save Event</button>
+                <button type="reset" class="inline-flex items-center justify-center gap-2 px-5 sm:px-6 py-2.5 sm:py-3 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 transition text-sm">Clear</button>
             </div>
         </form>
     </div>
 
     <div class="bg-white rounded-2xl border border-slate-200 card-shadow">
-        <div class="flex items-center justify-between px-6 py-5 border-b border-slate-200">
-            <p class="text-lg font-semibold text-primary">Event Records</p>
+        <div class="flex items-center justify-between px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-200">
+            <p class="text-base sm:text-lg font-semibold text-primary">Event Records</p>
         </div>
         <div class="overflow-x-auto">
             <table class="min-w-full text-sm">

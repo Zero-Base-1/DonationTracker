@@ -2,10 +2,14 @@
 
 declare(strict_types=1);
 
-session_start();
+require __DIR__ . '/includes/functions.php';
+
+if (session_status() !== PHP_SESSION_ACTIVE) {
+    session_start();
+}
+
 $_SESSION = [];
 session_destroy();
 
-header('Location: /DonationTracker/login.php');
-exit;
+redirect('login.php');
 

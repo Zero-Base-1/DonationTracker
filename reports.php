@@ -24,16 +24,16 @@ include __DIR__ . '/templates/header.php';
 
 ?>
 
-<div class="grid gap-8">
-    <div class="bg-white rounded-2xl border border-slate-200 p-6 card-shadow">
-        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+<div class="grid gap-6 md:gap-8">
+    <div class="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 md:p-6 card-shadow">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 md:gap-4">
             <div>
-                <p class="text-lg font-semibold text-primary">Donation Totals by Event</p>
+                <p class="text-base sm:text-lg font-semibold text-primary">Donation Totals by Event</p>
                 <p class="text-xs text-slate-500">Compare fundraising performance across events.</p>
             </div>
         </div>
-        <div class="overflow-x-auto mt-6">
-            <table class="min-w-full text-sm">
+        <div class="overflow-x-auto mt-4 sm:mt-6">
+            <table class="min-w-full text-xs sm:text-sm">
                 <thead class="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
                     <tr>
                         <th class="px-6 py-3">Event</th>
@@ -66,15 +66,15 @@ include __DIR__ . '/templates/header.php';
         </div>
     </div>
 
-    <div class="bg-white rounded-2xl border border-slate-200 p-6 card-shadow">
-        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+    <div class="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 md:p-6 card-shadow">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 md:gap-4">
             <div>
-                <p class="text-lg font-semibold text-primary">Donation Totals by Type</p>
+                <p class="text-base sm:text-lg font-semibold text-primary">Donation Totals by Type</p>
                 <p class="text-xs text-slate-500">Understand how contributions are coming in.</p>
             </div>
         </div>
-        <div class="overflow-x-auto mt-6">
-            <table class="min-w-full text-sm">
+        <div class="overflow-x-auto mt-4 sm:mt-6">
+            <table class="min-w-full text-xs sm:text-sm">
                 <thead class="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
                     <tr>
                         <th class="px-6 py-3">Type</th>
@@ -107,24 +107,24 @@ include __DIR__ . '/templates/header.php';
         </div>
     </div>
 
-    <div class="bg-white rounded-2xl border border-slate-200 p-6 card-shadow">
-        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+    <div class="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 md:p-6 card-shadow">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 md:gap-4">
             <div>
-                <p class="text-lg font-semibold text-primary">Recent Activity</p>
+                <p class="text-base sm:text-lg font-semibold text-primary">Recent Activity</p>
                 <p class="text-xs text-slate-500">Latest donations and events logged.</p>
             </div>
         </div>
-        <ul class="mt-6 space-y-4">
+        <ul class="mt-4 sm:mt-6 space-y-3 sm:space-y-4">
             <?php if (count($recentActivity) === 0) : ?>
                 <li class="text-sm text-slate-500">No recent activity to display.</li>
             <?php else : ?>
                 <?php foreach ($recentActivity as $item) : ?>
-                    <li class="flex items-center justify-between gap-4 bg-slate-50 rounded-xl px-5 py-4">
-                        <div>
-                            <p class="text-sm font-semibold text-primary"><?= htmlspecialchars($item['title']); ?></p>
+                    <li class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4 bg-slate-50 rounded-xl px-4 sm:px-5 py-3 sm:py-4">
+                        <div class="flex-1 min-w-0">
+                            <p class="text-sm font-semibold text-primary truncate"><?= htmlspecialchars($item['title']); ?></p>
                             <p class="text-xs text-slate-500 mt-1">Type: <?= htmlspecialchars($item['activity_type']); ?></p>
                         </div>
-                        <div class="text-right">
+                        <div class="text-left sm:text-right flex-shrink-0">
                             <p class="text-xs text-slate-500"><?= htmlspecialchars(date('M j, Y', strtotime($item['activity_date']))); ?></p>
                             <?php if ($item['activity_type'] === 'Donation' && $item['metric'] !== null) : ?>
                                 <p class="text-sm font-semibold text-primary mt-1"><?= formatCurrency((float) $item['metric']); ?></p>

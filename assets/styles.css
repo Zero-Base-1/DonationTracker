@@ -11,3 +11,384 @@ body {
     backdrop-filter: blur(14px);
 }
 
+/* ============================
+   Responsive Fluid Grid System
+   ============================ */
+
+/* Base container for fluid layouts */
+.fluid-container {
+    width: 100%;
+    max-width: 100%;
+    padding-left: 1rem;
+    padding-right: 1rem;
+}
+
+/* Responsive stat cards */
+.stat-card {
+    padding: 1rem;
+}
+
+/* Mobile-first approach: Small screens (< 640px) */
+@media (max-width: 639px) {
+    /* Adjust padding for mobile */
+    .stat-card {
+        padding: 1rem;
+    }
+    
+    /* Make text responsive */
+    .stat-card .text-3xl {
+        font-size: 1.875rem !important;
+    }
+    
+    /* Stack chart toggles vertically */
+    .chart-toggle {
+        width: 100%;
+        text-align: center;
+    }
+    
+    /* Adjust table padding */
+    table th,
+    table td {
+        padding: 0.75rem 0.5rem !important;
+        font-size: 0.813rem;
+    }
+    
+    /* Hide less important table columns on mobile */
+    .table-hide-mobile {
+        display: none;
+    }
+    
+    /* Adjust navigation sidebar */
+    aside nav a {
+        padding: 0.625rem 0.75rem !important;
+        font-size: 0.813rem;
+    }
+    
+    /* Make forms single column */
+    form .grid {
+        grid-template-columns: 1fr !important;
+    }
+    
+    /* Adjust button groups */
+    .button-group {
+        flex-direction: column;
+    }
+    
+    .button-group button,
+    .button-group a {
+        width: 100%;
+    }
+}
+
+/* Tablet screens (640px - 768px) */
+@media (min-width: 640px) and (max-width: 767px) {
+    .stat-card {
+        padding: 1.25rem;
+    }
+    
+    /* Two columns for stat cards */
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+    }
+    
+    /* Adjust chart height */
+    .chart-container {
+        height: 16rem;
+    }
+}
+
+/* Medium screens (768px - 1024px) */
+@media (min-width: 768px) and (max-width: 1023px) {
+    /* Adjust padding */
+    .card-shadow {
+        padding: 1.5rem;
+    }
+    
+    /* Three columns for feature grids */
+    .feature-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1.5rem;
+    }
+    
+    /* Ensure tables remain scrollable */
+    .overflow-x-auto {
+        -webkit-overflow-scrolling: touch;
+    }
+}
+
+/* Large screens (1024px+) */
+@media (min-width: 1024px) {
+    .fluid-container {
+        padding-left: 2rem;
+        padding-right: 2rem;
+    }
+    
+    /* Four columns for stat cards */
+    .stats-grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+    
+    /* Optimal chart height */
+    .chart-container {
+        height: 18rem;
+    }
+}
+
+/* Extra large screens (1280px+) */
+@media (min-width: 1280px) {
+    .fluid-container {
+        max-width: 1280px;
+        margin: 0 auto;
+    }
+}
+
+/* ============================
+   Responsive Typography
+   ============================ */
+
+/* Fluid typography using clamp */
+h1 {
+    font-size: clamp(1.75rem, 4vw, 3rem);
+}
+
+h2 {
+    font-size: clamp(1.5rem, 3vw, 2.25rem);
+}
+
+h3 {
+    font-size: clamp(1.25rem, 2.5vw, 1.875rem);
+}
+
+.stat-number {
+    font-size: clamp(1.5rem, 3vw, 3rem);
+}
+
+/* ============================
+   Responsive Utilities
+   ============================ */
+
+/* Flexible images */
+img {
+    max-width: 100%;
+    height: auto;
+}
+
+/* Responsive spacing */
+.responsive-spacing {
+    padding: clamp(1rem, 3vw, 2.5rem);
+}
+
+/* Flexible gap utility */
+.flexible-gap {
+    gap: clamp(0.75rem, 2vw, 1.5rem);
+}
+
+/* Mobile menu enhancements */
+@media (max-width: 767px) {
+    /* Make sidebar full width when visible */
+    #sidebar {
+        width: 280px !important;
+        box-shadow: 2px 0 8px rgba(0, 0, 0, 0.15);
+    }
+    
+    #sidebar.mobile-open {
+        display: flex !important;
+        transform: translateX(0) !important;
+    }
+    
+    /* Add overlay for mobile sidebar */
+    #sidebar.mobile-open::before {
+        content: '';
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: -1;
+    }
+    
+    /* Adjust header for mobile */
+    header {
+        padding: 1rem !important;
+    }
+    
+    header .text-xl {
+        font-size: 1.125rem !important;
+    }
+    
+    /* Adjust main content padding */
+    main section {
+        padding: 1.5rem 1rem !important;
+    }
+}
+
+/* Landscape mobile devices */
+@media (max-width: 767px) and (orientation: landscape) {
+    /* Reduce vertical spacing in landscape */
+    .stat-card {
+        padding: 0.75rem;
+    }
+    
+    aside nav {
+        padding-top: 1rem !important;
+        padding-bottom: 1rem !important;
+    }
+}
+
+/* Print styles */
+@media print {
+    aside,
+    header button,
+    .no-print {
+        display: none !important;
+    }
+    
+    main {
+        width: 100% !important;
+    }
+    
+    .card-shadow {
+        box-shadow: none;
+        border: 1px solid #000;
+    }
+}
+
+/* ============================
+   Sidebar Toggle/Collapse
+   ============================ */
+
+/* Collapsed sidebar state */
+#sidebar.collapsed {
+    width: 4.5rem !important; /* ~72px - just enough for icons */
+}
+
+#sidebar.collapsed .sidebar-text {
+    opacity: 0;
+    width: 0;
+    overflow: hidden;
+    transition: opacity 0.2s ease, width 0.2s ease;
+}
+
+#sidebar.collapsed .sidebar-icon-expanded {
+    display: none;
+}
+
+#sidebar.collapsed .sidebar-icon-collapsed {
+    display: block !important;
+}
+
+#sidebar:not(.collapsed) .sidebar-text {
+    opacity: 1;
+    transition: opacity 0.3s ease 0.1s;
+}
+
+/* Adjust nav items when collapsed */
+#sidebar.collapsed nav a {
+    justify-content: center;
+    padding-left: 0.75rem !important;
+    padding-right: 0.75rem !important;
+}
+
+/* Center the logo when collapsed */
+#sidebar.collapsed .px-4,
+#sidebar.collapsed .px-6,
+#sidebar.collapsed .lg\\:px-6 {
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+}
+
+#sidebar.collapsed .sidebar-header-content {
+    justify-content: center !important;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem !important;
+}
+
+/* Position toggle button when collapsed - small centered button below logo */
+#sidebar.collapsed .sidebar-toggle-btn {
+    position: static;
+    transform: none;
+    padding: 0.5rem;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 0.5rem;
+    width: 2rem;
+    height: 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#sidebar.collapsed .sidebar-toggle-btn svg {
+    width: 1rem;
+    height: 1rem;
+}
+
+/* Adjust footer alignment when collapsed */
+#sidebar.collapsed > div:last-child {
+    text-align: center;
+}
+
+#sidebar.collapsed > div:last-child a {
+    justify-content: center;
+}
+
+/* Hide footer text when collapsed, show only icon */
+#sidebar.collapsed > div:last-child p {
+    display: none;
+}
+
+/* Smooth transitions */
+#sidebar {
+    transition: width 0.3s ease, transform 0.3s ease;
+}
+
+#sidebar * {
+    transition-property: opacity, width, padding;
+    transition-duration: 0.2s;
+    transition-timing-function: ease;
+}
+
+/* Disable collapse animation on mobile */
+@media (max-width: 767px) {
+    #sidebar.collapsed {
+        width: 280px !important;
+    }
+    
+    #sidebar.collapsed .sidebar-text {
+        opacity: 1;
+        width: auto;
+    }
+    
+    #sidebar.collapsed .sidebar-header-content {
+        flex-direction: row;
+        justify-content: flex-start;
+    }
+    
+    #sidebar.collapsed .sidebar-toggle-btn {
+        position: static;
+        width: auto;
+        height: auto;
+        background: transparent;
+    }
+    
+    #sidebar.collapsed nav a {
+        justify-content: flex-start;
+        padding-left: 0.75rem;
+        padding-right: 0.75rem;
+    }
+}
+
+/* Tooltip styling for collapsed state */
+#sidebar.collapsed nav a,
+#sidebar.collapsed a[title] {
+    position: relative;
+}
+
+/* Ensure icons stay visible and centered */
+#sidebar.collapsed nav a svg,
+#sidebar.collapsed .w-9,
+#sidebar.collapsed .w-10 {
+    flex-shrink: 0;
+}
+

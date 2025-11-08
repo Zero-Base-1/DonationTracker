@@ -3,10 +3,10 @@
 declare(strict_types=1);
 
 // MySQL connection configuration
-$host = 'localhost';
-$dbname = 'donation_tracker';
-$username = 'root';
-$password = '';
+$host = 'sql211.infinityfree.com';
+$dbname = 'if0_40366769_donationtracker';
+$username = 'if0_40366769';
+$password = 'XOYSVYVOHx0e8no';
 
 try {
     $pdo = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8mb4", $username, $password);

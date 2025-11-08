@@ -63,7 +63,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $existing = getDonation($pdo, $donationId);
             if (!$existing || (!isAdmin() && (int) ($existing['created_by'] ?? 0) !== $userId)) {
                 flash('error', 'You cannot modify this donation.');
-                redirect('/DonationTracker/donations.php');
+                redirect('donations.php');
             }
 
             unset($payload['created_by']);
@@ -74,7 +74,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             flash('success', 'Donation added successfully.');
         }
 
-        redirect('/DonationTracker/donations.php');
+        redirect('donations.php');
     }
 }
 
@@ -83,12 +83,12 @@ if (isset($_GET['delete'])) {
     $existing = getDonation($pdo, $deleteId);
     if (!$existing || (!isAdmin() && (int) ($existing['created_by'] ?? 0) !== $userId)) {
         flash('error', 'You cannot delete this donation.');
-        redirect('/DonationTracker/donations.php');
+        redirect('donations.php');
     }
 
     deleteDonation($pdo, $deleteId);
     flash('success', 'Donation deleted successfully.');
-    redirect('/DonationTracker/donations.php');
+    redirect('donations.php');
 }
 
 if (isset($_GET['edit'])) {
@@ -97,7 +97,7 @@ if (isset($_GET['edit'])) {
 
     if (!$donation || (!isAdmin() && (int) ($donation['created_by'] ?? 0) !== $userId)) {
         flash('error', 'Donation not found.');
-        redirect('/DonationTracker/donations.php');
+        redirect('donations.php');
     }
 
     $formData = [
@@ -120,11 +120,11 @@ include __DIR__ . '/templates/header.php';
 
 ?>
 
-<div class="grid gap-8">
-    <div class="bg-white rounded-2xl border border-slate-200 p-6 card-shadow">
-        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+<div class="grid gap-6 md:gap-8">
+    <div class="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 md:p-6 card-shadow">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 md:gap-4">
             <div>
-                <p class="text-lg font-semibold text-primary">Add or Update Donation</p>
+                <p class="text-base sm:text-lg font-semibold text-primary">Add or Update Donation</p>
                 <p class="text-xs text-slate-500">Record donation details to keep your data fresh.</p>
             </div>
         </div>
@@ -152,23 +152,23 @@ include __DIR__ . '/templates/header.php';
             </div>
         <?php endif; ?>
 
-        <form method="POST" class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+        <form method="POST" class="mt-4 sm:mt-6 grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
             <input type="hidden" name="id" value="<?= htmlspecialchars($formData['id']); ?>">
             <div>
-                <label class="block text-sm font-medium text-slate-600">Donor Name</label>
-                <input type="text" name="donor_name" required class="mt-2 w-full rounded-lg border border-slate-200 px-4 py-3 focus:border-accent focus:ring-2 focus:ring-accent/40 transition" value="<?= htmlspecialchars($formData['donor_name']); ?>">
+                <label class="block text-xs sm:text-sm font-medium text-slate-600">Donor Name</label>
+                <input type="text" name="donor_name" required class="mt-2 w-full rounded-lg border border-slate-200 px-3 sm:px-4 py-2 sm:py-3 text-sm focus:border-accent focus:ring-2 focus:ring-accent/40 transition" value="<?= htmlspecialchars($formData['donor_name']); ?>">
             </div>
             <div>
-                <label class="block text-sm font-medium text-slate-600">Donation Date</label>
-                <input type="date" name="donation_date" required class="mt-2 w-full rounded-lg border border-slate-200 px-4 py-3 focus:border-accent focus:ring-2 focus:ring-accent/40 transition" value="<?= htmlspecialchars($formData['donation_date']); ?>">
+                <label class="block text-xs sm:text-sm font-medium text-slate-600">Donation Date</label>
+                <input type="date" name="donation_date" required class="mt-2 w-full rounded-lg border border-slate-200 px-3 sm:px-4 py-2 sm:py-3 text-sm focus:border-accent focus:ring-2 focus:ring-accent/40 transition" value="<?= htmlspecialchars($formData['donation_date']); ?>">
             </div>
             <div>
-                <label class="block text-sm font-medium text-slate-600">Amount</label>
-                <input type="number" name="amount" min="0" step="0.01" required class="mt-2 w-full rounded-lg border border-slate-200 px-4 py-3 focus:border-accent focus:ring-2 focus:ring-accent/40 transition" value="<?= htmlspecialchars($formData['amount']); ?>">
+                <label class="block text-xs sm:text-sm font-medium text-slate-600">Amount</label>
+                <input type="number" name="amount" min="0" step="0.01" required class="mt-2 w-full rounded-lg border border-slate-200 px-3 sm:px-4 py-2 sm:py-3 text-sm focus:border-accent focus:ring-2 focus:ring-accent/40 transition" value="<?= htmlspecialchars($formData['amount']); ?>">
             </div>
             <div>
-                <label class="block text-sm font-medium text-slate-600">Type</label>
-                <select name="type" class="mt-2 w-full rounded-lg border border-slate-200 px-4 py-3 focus:border-accent focus:ring-2 focus:ring-accent/40 transition">
+                <label class="block text-xs sm:text-sm font-medium text-slate-600">Type</label>
+                <select name="type" class="mt-2 w-full rounded-lg border border-slate-200 px-3 sm:px-4 py-2 sm:py-3 text-sm focus:border-accent focus:ring-2 focus:ring-accent/40 transition">
                     <option value="" disabled <?php if ($formData['type'] === '') echo 'selected'; ?>>Select type</option>
                     <?php
                     $types = ['Cash', 'In-kind', 'Online', 'Pledge'];
@@ -180,8 +180,8 @@ include __DIR__ . '/templates/header.php';
                 </select>
             </div>
             <div>
-                <label class="block text-sm font-medium text-slate-600">Related Event</label>
-                <select name="event_id" class="mt-2 w-full rounded-lg border border-slate-200 px-4 py-3 focus:border-accent focus:ring-2 focus:ring-accent/40 transition">
+                <label class="block text-xs sm:text-sm font-medium text-slate-600">Related Event</label>
+                <select name="event_id" class="mt-2 w-full rounded-lg border border-slate-200 px-3 sm:px-4 py-2 sm:py-3 text-sm focus:border-accent focus:ring-2 focus:ring-accent/40 transition">
                     <option value="">No event selected</option>
                     <?php foreach ($events as $event) : ?>
                         <option value="<?= (int) $event['id']; ?>" <?php if ((string) $event['id'] === $formData['event_id']) echo 'selected'; ?>><?= htmlspecialchars($event['name']); ?></option>
@@ -189,19 +189,19 @@ include __DIR__ . '/templates/header.php';
                 </select>
             </div>
             <div class="md:col-span-2">
-                <label class="block text-sm font-medium text-slate-600">Notes</label>
-                <textarea name="notes" rows="3" class="mt-2 w-full rounded-lg border border-slate-200 px-4 py-3 focus:border-accent focus:ring-2 focus:ring-accent/40 transition"><?= htmlspecialchars($formData['notes']); ?></textarea>
+                <label class="block text-xs sm:text-sm font-medium text-slate-600">Notes</label>
+                <textarea name="notes" rows="3" class="mt-2 w-full rounded-lg border border-slate-200 px-3 sm:px-4 py-2 sm:py-3 text-sm focus:border-accent focus:ring-2 focus:ring-accent/40 transition"><?= htmlspecialchars($formData['notes']); ?></textarea>
             </div>
-            <div class="md:col-span-2 flex gap-4">
-                <button type="submit" class="inline-flex items-center gap-2 bg-primary text-white px-6 py-3 rounded-lg hover:bg-secondary transition font-medium">Save Donation</button>
-                <button type="reset" class="inline-flex items-center gap-2 px-6 py-3 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 transition">Clear</button>
+            <div class="md:col-span-2 flex flex-col sm:flex-row gap-3 sm:gap-4 button-group">
+                <button type="submit" class="inline-flex items-center justify-center gap-2 bg-primary text-white px-5 sm:px-6 py-2.5 sm:py-3 rounded-lg hover:bg-secondary transition font-medium text-sm">Save Donation</button>
+                <button type="reset" class="inline-flex items-center justify-center gap-2 px-5 sm:px-6 py-2.5 sm:py-3 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 transition text-sm">Clear</button>
             </div>
         </form>
     </div>
 
     <div class="bg-white rounded-2xl border border-slate-200 card-shadow">
-        <div class="flex items-center justify-between px-6 py-5 border-b border-slate-200">
-            <p class="text-lg font-semibold text-primary">Donation Records</p>
+        <div class="flex items-center justify-between px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-200">
+            <p class="text-base sm:text-lg font-semibold text-primary">Donation Records</p>
         </div>
         <div class="overflow-x-auto">
             <table class="min-w-full text-sm">

@@ -10,7 +10,7 @@ if (session_status() !== PHP_SESSION_ACTIVE) {
 }
 
 if (isset($_SESSION['user'])) {
-    redirect('/DonationTracker/dashboard.php');
+    redirect('dashboard.php');
 }
 
 $errors = [];
@@ -66,7 +66,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         ]);
 
         flash('success', 'Account created! Please sign in to continue.');
-        redirect('/DonationTracker/login.php');
+        redirect('login.php');
     }
 }
 
@@ -112,7 +112,7 @@ include __DIR__ . '/templates/header.php';
             <div class="text-xs text-slate-500 text-center">
                 <p>
                     Already have an account?
-                    <a href="/DonationTracker/login.php" class="text-accent hover:text-primary transition font-medium">Sign in</a>
+                    <a href="<?= app_url('login.php'); ?>" class="text-accent hover:text-primary transition font-medium">Sign in</a>
                 </p>
             </div>
         </form>

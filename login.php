@@ -10,7 +10,7 @@ if (session_status() !== PHP_SESSION_ACTIVE) {
 }
 
 if (isset($_SESSION['user'])) {
-    redirect('/DonationTracker/dashboard.php');
+    redirect('dashboard.php');
 }
 
 $errors = [];
@@ -34,7 +34,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'role' => $user['role'],
             ];
 
-            redirect('/DonationTracker/dashboard.php');
+            redirect('dashboard.php');
         }
 
         $errors[] = 'Invalid credentials. Please try again.';
@@ -78,7 +78,7 @@ include __DIR__ . '/templates/header.php';
             <div class="text-xs text-slate-500 text-center space-y-2">
                 <p>
                     Don’t have an account?
-                    <a href="/DonationTracker/signin.php" class="text-accent hover:text-primary transition font-medium">Create one</a>
+                    <a href="<?= app_url('signin.php'); ?>" class="text-accent hover:text-primary transition font-medium">Create one</a>
                 </p>
             </div>
         </form>

@@ -10,6 +10,6 @@ if (session_status() !== PHP_SESSION_ACTIVE) {
 }
 
 if (!currentUser()) {
-    redirect('/DonationTracker/login.php');
+    redirect('login.php');
 }
 

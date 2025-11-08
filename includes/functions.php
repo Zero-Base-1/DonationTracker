@@ -2,6 +2,54 @@
 
 declare(strict_types=1);
 
+if (!defined('APP_BASE_PATH')) {
+    $documentRoot = $_SERVER['DOCUMENT_ROOT'] ?? '';
+    $appRoot = dirname(__DIR__);
+
+    $documentRootReal = $documentRoot !== '' ? realpath($documentRoot) : false;
+    $appRootReal = realpath($appRoot);
+
+    if ($documentRootReal !== false) {
+        $documentRoot = $documentRootReal;
+    }
+
+    if ($appRootReal !== false) {
+        $appRoot = $appRootReal;
+    }
+
+    $documentRoot = rtrim(str_replace('\\', '/', $documentRoot), '/');
+    $appRoot = rtrim(str_replace('\\', '/', $appRoot), '/');
+
+    $basePath = '';
+    if ($documentRoot !== '' && str_starts_with($appRoot, $documentRoot)) {
+        $basePath = substr($appRoot, strlen($documentRoot));
+    }
+
+    $basePath = '/' . ltrim($basePath, '/');
+
+    if ($basePath === '/' || $basePath === '') {
+        $basePath = '';
+    }
+
+    define('APP_BASE_PATH', $basePath);
+}
+
+function app_url(string $path = ''): string
+{
+    $base = APP_BASE_PATH ?? '';
+    $path = ltrim($path, '/');
+
+    if ($base === '') {
+        return $path === '' ? '/' : '/' . $path;
+    }
+
+    if ($path === '') {
+        return $base;
+    }
+
+    return $base . '/' . $path;
+}
+
 function sanitize(string $value): string
 {
     return htmlspecialchars(trim($value), ENT_QUOTES, 'UTF-8');
@@ -9,6 +57,19 @@ function sanitize(string $value): string
 
 function redirect(string $path): void
 {
+    if (!preg_match('#^(?:[a-z]+:)?//#i', $path)) {
+        if (str_starts_with($path, '/')) {
+            if ((APP_BASE_PATH ?? '') !== '') {
+                $normalizedBase = rtrim(APP_BASE_PATH, '/') . '/';
+                if (!str_starts_with($path, $normalizedBase)) {
+                    $path = rtrim(APP_BASE_PATH, '/') . $path;
+                }
+            }
+        } else {
+            $path = app_url($path);
+        }
+    }
+
     header('Location: ' . $path);
     exit;
 }
@@ -86,7 +147,7 @@ function requireLogin(): void
 {
     if (!currentUser()) {
         flash('error', 'Please sign in to continue.');
-        redirect('/DonationTracker/login.php');
+        redirect('login.php');
     }
 }
 
@@ -101,7 +162,7 @@ function requireAdmin(): void
 {
     if (!isAdmin()) {
         flash('error', 'You do not have permission to access that area.');
-        redirect('/DonationTracker/dashboard.php');
+        redirect('dashboard.php');
     }
 }
 
