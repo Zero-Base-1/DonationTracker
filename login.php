@@ -10,11 +10,7 @@ if (isset($_GET['debug'])) {
 require __DIR__ . '/includes/db.php';
 require __DIR__ . '/includes/functions.php';
 
-if (session_status() !== PHP_SESSION_ACTIVE) {
-    session_start();
-}
-
-if (isset($_SESSION['user'])) {
+if (($existingUser = currentUser()) !== null) {
     redirect('dashboard.php');
 }
 
@@ -32,12 +28,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $user = $stmt->fetch();
 
         if ($user && password_verify($password, $user['password_hash'])) {
-            $_SESSION['user'] = [
-                'id' => $user['id'],
+            if (session_status() !== PHP_SESSION_ACTIVE) {
+                session_start();
+            }
+
+            $sessionUser = [
+                'id' => (int) $user['id'],
                 'name' => $user['name'],
                 'email' => $user['email'],
                 'role' => $user['role'],
             ];
+
+            $_SESSION['user'] = $sessionUser;
+            rememberUser($sessionUser);
 
             redirect('dashboard.php');
         }
@@ -75,7 +78,6 @@ include __DIR__ . '/templates/header.php';
             <div>
                 <div class="flex items-center justify-between text-sm">
                     <label for="password" class="font-medium text-slate-600">Password</label>
-                    <a href="<?= app_url('forgot_password.php'); ?>" class="text-accent hover:text-primary transition">Forgot password?</a>
                 </div>
                 <input type="password" id="password" name="password" required class="mt-2 w-full rounded-lg border border-slate-200 px-4 py-3 focus:border-accent focus:ring-2 focus:ring-accent/40 transition" placeholder="••••••••">
             </div>

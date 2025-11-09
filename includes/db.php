@@ -76,6 +76,26 @@ try {
     }
 }
 
+try {
+    $pdo->exec(
+        'CREATE TABLE IF NOT EXISTS user_remember_tokens (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            user_id INT NOT NULL,
+            token_hash CHAR(64) NOT NULL,
+            expires_at DATETIME NOT NULL,
+            created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            INDEX idx_user_token (user_id, token_hash),
+            INDEX idx_expires_at_tokens (expires_at),
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4'
+    );
+} catch (PDOException $e) {
+    error_log('Failed to ensure user_remember_tokens table: ' . $e->getMessage());
+    if (isset($_GET['debug'])) {
+        echo 'Failed to ensure user_remember_tokens table: ' . htmlspecialchars($e->getMessage());
+    }
+}
+
 $ensureColumn = static function(PDO $pdo, string $table, string $column, string $definition): void {
     $stmt = $pdo->prepare("SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS 
                            WHERE TABLE_SCHEMA = DATABASE() 

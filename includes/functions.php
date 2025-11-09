@@ -34,6 +34,14 @@ if (!defined('APP_BASE_PATH')) {
     define('APP_BASE_PATH', $basePath);
 }
 
+if (!defined('REMEMBER_ME_COOKIE')) {
+    define('REMEMBER_ME_COOKIE', 'dt_remember');
+}
+
+if (!defined('REMEMBER_ME_TTL_DAYS')) {
+    define('REMEMBER_ME_TTL_DAYS', 14);
+}
+
 function app_url(string $path = ''): string
 {
     $base = APP_BASE_PATH ?? '';
@@ -127,13 +135,203 @@ function truncateText(string $text, int $width, string $suffix = '…'): string
     return $trimmed . $suffix;
 }
 
+function rememberCookiePath(): string
+{
+    $base = APP_BASE_PATH ?? '';
+
+    if ($base === '' || $base === '/') {
+        return '/';
+    }
+
+    return rtrim($base, '/') . '/';
+}
+
+function rememberCookieOptions(int $expiresTimestamp): array
+{
+    $isSecure = !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off';
+
+    return [
+        'expires' => $expiresTimestamp,
+        'path' => rememberCookiePath(),
+        'secure' => $isSecure,
+        'httponly' => true,
+        'samesite' => 'Strict',
+    ];
+}
+
+function forgetRememberCookie(): void
+{
+    if (!isset($_COOKIE[REMEMBER_ME_COOKIE])) {
+        return;
+    }
+
+    setcookie(REMEMBER_ME_COOKIE, '', rememberCookieOptions(time() - 3600));
+    unset($_COOKIE[REMEMBER_ME_COOKIE]);
+}
+
+function deleteRememberTokensForUser(int $userId): void
+{
+    global $pdo;
+
+    if (!isset($pdo) || !($pdo instanceof PDO)) {
+        return;
+    }
+
+    try {
+        $stmt = $pdo->prepare('DELETE FROM user_remember_tokens WHERE user_id = :user_id');
+        $stmt->execute([':user_id' => $userId]);
+    } catch (PDOException $e) {
+        error_log('Failed to delete remember tokens for user ' . $userId . ': ' . $e->getMessage());
+    }
+}
+
+function rememberUser(array $user, int $ttlDays = REMEMBER_ME_TTL_DAYS): void
+{
+    if (!isset($user['id'])) {
+        return;
+    }
+
+    global $pdo;
+
+    if (!isset($pdo) || !($pdo instanceof PDO)) {
+        return;
+    }
+
+    try {
+        $token = bin2hex(random_bytes(32));
+    } catch (Exception $e) {
+        error_log('Failed to generate remember token: ' . $e->getMessage());
+        return;
+    }
+
+    $userId = (int) $user['id'];
+    $expiresAt = (new DateTimeImmutable('+' . max(1, $ttlDays) . ' days'));
+    $tokenHash = hash('sha256', $token);
+
+    try {
+        $pdo->prepare('DELETE FROM user_remember_tokens WHERE user_id = :user_id')->execute([':user_id' => $userId]);
+        $pdo->prepare('INSERT INTO user_remember_tokens (user_id, token_hash, expires_at) VALUES (:user_id, :token_hash, :expires_at)')
+            ->execute([
+                ':user_id' => $userId,
+                ':token_hash' => $tokenHash,
+                ':expires_at' => $expiresAt->format('Y-m-d H:i:s'),
+            ]);
+    } catch (PDOException $e) {
+        error_log('Failed to persist remember token: ' . $e->getMessage());
+        return;
+    }
+
+    setcookie(
+        REMEMBER_ME_COOKIE,
+        $userId . ':' . $token,
+        rememberCookieOptions($expiresAt->getTimestamp())
+    );
+
+    $_COOKIE[REMEMBER_ME_COOKIE] = $userId . ':' . $token;
+}
+
+function restoreUserFromRememberCookie(): ?array
+{
+    if (!isset($_COOKIE[REMEMBER_ME_COOKIE])) {
+        return null;
+    }
+
+    $cookieValue = $_COOKIE[REMEMBER_ME_COOKIE];
+    $parts = explode(':', $cookieValue, 2);
+
+    if (count($parts) !== 2) {
+        forgetRememberCookie();
+        return null;
+    }
+
+    [$userIdRaw, $token] = $parts;
+    if ($token === '' || !ctype_digit($userIdRaw)) {
+        forgetRememberCookie();
+        return null;
+    }
+
+    $userId = (int) $userIdRaw;
+    $tokenHash = hash('sha256', $token);
+
+    global $pdo;
+
+    if (!isset($pdo) || !($pdo instanceof PDO)) {
+        return null;
+    }
+
+    try {
+        $stmt = $pdo->prepare(
+            'SELECT u.id, u.name, u.email, u.role, t.expires_at 
+             FROM user_remember_tokens t
+             INNER JOIN users u ON u.id = t.user_id
+             WHERE t.user_id = :user_id AND t.token_hash = :token_hash
+             LIMIT 1'
+        );
+        $stmt->execute([
+            ':user_id' => $userId,
+            ':token_hash' => $tokenHash,
+        ]);
+        $record = $stmt->fetch();
+    } catch (PDOException $e) {
+        error_log('Failed to restore remember token: ' . $e->getMessage());
+        forgetRememberCookie();
+        return null;
+    }
+
+    if (!$record) {
+        deleteRememberTokensForUser($userId);
+        forgetRememberCookie();
+        return null;
+    }
+
+    $expiresAt = DateTimeImmutable::createFromFormat('Y-m-d H:i:s', $record['expires_at']);
+    $now = new DateTimeImmutable('now');
+
+    if (!$expiresAt || $expiresAt <= $now) {
+        deleteRememberTokensForUser($userId);
+        forgetRememberCookie();
+        return null;
+    }
+
+    deleteRememberTokensForUser($userId);
+
+    $user = [
+        'id' => (int) $record['id'],
+        'name' => $record['name'],
+        'email' => $record['email'],
+        'role' => $record['role'] ?? 'user',
+    ];
+
+    rememberUser($user);
+
+    return $user;
+}
+
+function clearRememberedUser(?int $userId = null): void
+{
+    if ($userId !== null) {
+        deleteRememberTokensForUser($userId);
+    }
+
+    forgetRememberCookie();
+}
+
 function currentUser(): ?array
 {
     if (session_status() !== PHP_SESSION_ACTIVE) {
         session_start();
     }
 
-    return $_SESSION['user'] ?? null;
+    if (isset($_SESSION['user'])) {
+        return $_SESSION['user'];
+    }
+
+    $user = restoreUserFromRememberCookie();
+    if ($user !== null) {
+        $_SESSION['user'] = $user;
+    }
+
+    return $user;
 }
 
 function currentUserId(): ?int
